@@ -1,0 +1,4 @@
+[credentials]
+username = username@gmail.com
+password = fullySecretMyPassword
+deviceid = 0xDEADBEAFFFFF
