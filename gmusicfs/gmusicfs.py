@@ -11,6 +11,8 @@ import tempfile
 import traceback
 import urllib
 # import hashlib
+import time, threading
+
 
 import magic
 
@@ -100,20 +102,21 @@ class NoCredentialException(Exception):
 
 
 class Artist(object):
+    NO_ARTIST_TITLE = "No Artist"
 
     def __init__ (self, library, data, name=None):
         self.__library = library
-        self.__albums  = {}
-        self.__tracks  = {}
-        self.__data    = data
+        self.__albums = {}
+        self.__tracks = {}
+        self.__data = data
 
         # name
         if name is None and 'artist' in data and data['artist'].strip() != "":
             self.__name = data['artist']
-        elif name is not None and name.strip() != "" and False: # TODO: remove me. bypass
+        elif name is not None and name.strip() != "" and False:  # TODO: remove me. bypass
             self.__name = name
         else:
-            self.__name = NO_ARTIST_TITLE
+            self.__name = self.NO_ARTIST_TITLE
 
         # name_printable
         self.__name_printable = strip_text(self.__name)
@@ -125,11 +128,11 @@ class Artist(object):
             self.__id = self.__name
 
     @property
-    def id(self):
+    def id (self):
         return self.__id
 
     @property
-    def name(self):
+    def name (self):
         return self.__name
 
     @property
@@ -434,6 +437,7 @@ class Track(object):
         self.__stream_size  = 0
         self.__tag_length   = 0
         self.__path         = None
+        self.__num_of_open  = 0
 
         # TODO: its necessary to understand how it works
         # track_id
@@ -524,6 +528,9 @@ class Track(object):
             self.__path = path
         else:
             print("exist\n")
+
+    def set_num_of_open (self, num):
+        self.__num_of_open = num
 
     def __gen_tag (self):
         print("Creating tag idv3...")
@@ -635,9 +642,9 @@ class Track(object):
 
         return st
 
-    @staticmethod
-    def _open ():
+    def open (self):
         print("#######file openned!")
+        # self.__num_of_open+=1
         # print(self.__data)
         pass
         # self.__stream_url = urllib.request.urlopen(self.__library.get_stream_url(self.id))
@@ -804,25 +811,19 @@ class Track(object):
 
 
     # TODO: transfer the close logic of closing files from the library
-    def close (self, ):
-        print("############ closing track!!!!!!!")
-        # self.__stream_url.close()
-        # self.__stream_url = None
-        # pass
+    def close (self):
 
-        return #TODO: remove this line
-
-        if self.__stream_url:
-            log.info("#######################################################killing url")
-            self.__stream_cache = bytes()
-
-            if self.__rendered_tag:
-                self.__stream_cache += bytearray(self.__rendered_tag)
-
-            '''
-            self.__stream_url.close()
-            self.__stream_url = None
-            '''
+        if self.__library.gfs.get_num_opens(self.path) < 1:
+            print("i cleanup track")
+            if self.__stream_url:
+                print("#######################################################killing url")
+                self.__stream_url.close()
+                self.__stream_url = None
+                self.__stream_cache = bytes()
+                if self.__rendered_tag:
+                    self.__stream_cache += bytearray(self.__rendered_tag)
+        else:
+            print("######################################track opened another")
 
 
     def __str__ (self):
@@ -886,11 +887,11 @@ class Playlist(object):
 class MusicLibrary(object):
     """This class reads information about your Google Play Music library"""
 
-    def __init__ (self, username=None, password=None,
-                  true_file_size=False, verbose=0):
+    def __init__ (self, username=None, password=None,  true_file_size=False, verbose=0, gfs=None):
 
         self.verbose = bool(verbose)
         self.api     = GoogleMusicAPI(debug_logging=self.verbose)
+        self.gfs     = gfs
         self.__login_and_setup(username, password)
 
         self.__artists         = {}
@@ -1115,9 +1116,9 @@ class MusicLibrary(object):
         pp.pprint(self.__paths)
 
         # TODO: uncomment me
-        playlists = self.api.get_all_user_playlist_contents()
+        # playlists = self.api.get_all_user_playlist_contents()
 
-        # playlists = ""
+        playlists = ""
         for pl in playlists:
 
             name = strip_text(pl['name'])
@@ -1191,7 +1192,7 @@ class GMusicFS(LoggingMixIn, Operations):
         self.__opened_tracks = {}  # path -> urllib2_obj # TODO: короч отсюда танцувать или чо? я пока завис
 
         # Login to Google Play Music and parse the tracks:
-        self.library = MusicLibrary(username, password, true_file_size=true_file_size, verbose=verbose)
+        self.library = MusicLibrary(username, password, gfs=self, true_file_size=true_file_size, verbose=verbose)
         log.info("Filesystem ready : %s" % path)
 
     def cleanup (self):
@@ -1207,9 +1208,11 @@ class GMusicFS(LoggingMixIn, Operations):
         artist_album_dir_matches   = self.artist_album_dir.match(path)
         artist_album_dir2_matches  = self.artist_album_dir2.match(path)
 
+        '''
         print("regex:")
         print(self.artist_album_dir)
         print(self.artist_album_dir2)
+        '''
 
         artist_album_track_matches = self.artist_album_track.match(path)
         playlist_dir_matches       = self.playlist_dir.match(path)
@@ -1459,45 +1462,69 @@ class GMusicFS(LoggingMixIn, Operations):
 
 
 
-
-    def open (self, path, fh):
-        log.info("open: {} ({})".format(path, fh))
-
+    ## то что происходит при открытии файла
+    def open (self, path, fip):
+        log.info("open: {} ({})".format(path, fip))
         track = self.gettrack(path)
-
+        track.open() #trigger function in track class
         if track is None:
             RuntimeError('unexpected opening of path: %r' % path)
 
-        # TODO: check it
-        key = path + "-" + str(fh)
-        if not fh in self.__opened_tracks:  # TODO: ckeck it
-            self.__opened_tracks[key] = [0, track]  # TODO: check this code. track does not using
-
+        key = track.path
+        if not key in self.__opened_tracks:
+            self.__opened_tracks[key] = [0, track, fip]  # TODO: check this code. track does not using
         self.__opened_tracks[key][0] += 1
 
-        return fh
+        pp.pprint(self.__opened_tracks)
+        return fip
 
-    def release (self, path, fh):
-        log.info("release: {} ({})".format(path, fh))
-        key = path + "-" + str(fh)
-        track = self.__opened_tracks.get(key, None)
-        if not track:
+
+
+    def get_num_opens (self, path):
+        if not path in self.__opened_tracks:
+            return 0
+        else:
+            return self.__opened_tracks[path][0]
+
+
+    ## то что происходит при закрытии файла
+    def release (self, path, fip):
+        log.info("release: {} ({})".format(path, fip))
+        track = self.gettrack(path)
+
+        key = track.path
+
+        if not key in self.__opened_tracks:
             raise RuntimeError('unexpected path: %r' % path)
-        track[0] -= 1
-        if not track[0]:
-            track[1].close()
+
+        self.__opened_tracks[key][0] -= 1
+        track.set_num_of_open(self.__opened_tracks[key][0])
+        if self.__opened_tracks[key][0] < 1:
+           # time.sleep(2)
+            self.__opened_tracks[key][1].close()
+            #del self.__opened_tracks[key]
+        else:
+            print("трек открыт еще один раз")
+
+
         print("##openned tracks: ")
         pp.pprint(self.__opened_tracks)
 
-    def read (self, path, size, offset, fh):
-        log.info("read: {} offset: {} size: {} ({})".format(path, offset, size, fh))
-        key = path + "-" + str(fh)
+
+    ## то что происходит при чтении файла
+    def read (self, path, size, offset, fip):
+
+        log.info("read: {} offset: {} size: {} ({})".format(path, offset, size, fip))
+        track = self.gettrack(path)
+
+        key = track.path
         track = self.__opened_tracks.get(key, None)
         if track is None:
             raise RuntimeError('unexpected path: %r' % path)
 
         return track[1].read(offset, size)
 
+    ## то что происходит при чтении ссылки
     def readlink (self, path):
         print("My new path:" + path)
         track = self.gettrack(path)
@@ -1657,9 +1684,7 @@ def main():
     fs = GMusicFS(mountpoint, true_file_size=args.true_file_size, verbose=verbosity, lowercase=args.lowercase)
     # quit()
     try:
-        FUSE(fs, mountpoint, foreground=args.foreground,
-             ro=True, nothreads=False, allow_other=args.allow_other, allow_root=args.allow_root, uid=args.uid,
-             gid=args.gid)
+        FUSE(fs, mountpoint, foreground=args.foreground, raw_fi=False, ro=True, nothreads=True, allow_other=args.allow_other, allow_root=args.allow_root, uid=args.uid,  gid=args.gid)
     finally:
         fs.cleanup()
 
