@@ -21,7 +21,7 @@ mime = magic.Magic(mime=True)
 from gmusicapi import Webclient    as GoogleMusicWebAPI # need for getting device id's
 
 #from code import Tools, GMusicFS, MusicLibrary, NoCredentialException, Track, Album, Artist, Playlist
-from code import *
+from gmusicfs import *
 
 
 
@@ -90,6 +90,7 @@ def main():
     fs = GMusicFS(mountpoint, true_file_size=args.true_file_size, verbose=verbosity, lowercase=args.lowercase)
     # quit()
     try:
+        os.system("fusermount -uz " + mountpoint)
         FUSE(fs, mountpoint, foreground=args.foreground, raw_fi=False, ro=True, nothreads=True, allow_other=args.allow_other, allow_root=args.allow_root, uid=args.uid,  gid=args.gid)
     finally:
         fs.cleanup()

@@ -20,7 +20,7 @@ class Album(object):
     ALBUM_FORMAT = "{0.title_printable} ({0.year:04d})"
     NO_ALBUM_TITLE = "No Album"
 
-    def __init__(self, library, data):
+    def __init__(self, library, data, custId = None):
         self.__library    = library
         self.__data       = data
         self.__tracks     = {}
@@ -50,7 +50,10 @@ class Album(object):
         self.__album_artist_printable = Tools.strip_text(self.__album_artist)
 
         # album_id
-        if 'albumId' in data:
+
+        if custId != None: #TODO: check dynamic album id creating
+            self.__id = custId
+        elif 'albumId' in data:
             self.__id = data['albumId']
         elif Tools.strip_text(self.__album_title) == Tools.strip_text(self.NO_ALBUM_TITLE):
             self.__id = self.__album_title + self.__album_artist  # TODO: check it
@@ -135,7 +138,7 @@ class Album(object):
     def __get_year (self):
         # some tracks are not loaded from album_info, let's use them to get the album date release
         for track in self.__tracks.values():
-            self.__year = track.year or self.__year
+            self.__year = track.year or self.__year # TODO: fking year 0000
 
     # TODO: need check image type! some tracks has png cover
     def __load_art (self):

@@ -149,14 +149,26 @@ class MusicLibrary(object):
                     print("# ALERT! TRACK_BY_NAME ALREADY EXISTS IN TRACK BASE? DUPES?")
                     newtrack = self.__tracks_by_title[str(newtrack)]
 
+
+
                 # make album
                 new_album = Album(self, track)
-                if new_album.id not in self.__albums:
+                if new_album.id not in self.__albums: # TODO: check album titles
                     print("# new album in library: " + str(new_album))
                     self.__albums[new_album.id] = new_album
-                else:
-                    print("# old album from library: " + str(new_album))
+                elif new_album.title_printable == self.__albums[new_album.id].title_printable:
+                    print("# old album from library w eq title: " + str(new_album))
                     new_album = self.__albums[new_album.id]
+                else: #TODO: nice shit
+                    custId = new_album.id + new_album.title_printable
+                    if custId not in self.__albums:  # TODO: check album titles
+                        new_album = self.__albums[new_album.id]
+                        print("# old album from library w title: " + str(new_album) + ": " + custId)
+
+                        self.__albums[custId] = Album(self, track, custId)
+                    else:
+                        new_album = self.__albums[custId]
+                    custId = None
 
 
 
@@ -165,39 +177,70 @@ class MusicLibrary(object):
                 print("artist:" + new_artist.name_printable)
 
 
+                if new_artist.name_printable.strip() != "": #TODO: useless check?
 
-                # give Artist by name
-                if new_artist.name_printable in self.__artists_by_name:
-                    print("# artist from artist name printable: " + str(new_artist))
-                    new_artist = self.__artists_by_name[new_artist.name_printable]
+                    # give Artist by artist name
+                    if  new_artist.name_printable in self.__artists_by_name:
 
-                # Give Artist by album artist name
-                elif newtrack.album_artist_printable in self.__artists_by_name:
-                    print("# artist from albumArtist: " + str(new_artist))
-                    new_artist = self.__artists_by_name[newtrack.album_artist_printable]
+                        print("# artist from artist name printable: " + str(new_artist))
+                        new_artist = self.__artists_by_name[new_artist.name_printable]
+                    else:
+                        print("# store new artist : " + str(new_artist))
+                        print("# new artist store from nArtist.name_printable: " + new_artist.name_printable)
+                        self.__artists_by_name[new_artist.name_printable] = new_artist
 
-                # adding new artist
                 else:
-                    print("# store new artist : " + str(new_artist))
-                    if newtrack.album_artist_printable.strip() != "":
+                     print("# artist has no artist name. id: " + new_artist.id) #TODO: impossible?
+
+
+
+
+                if newtrack.album_artist_printable.strip() != "":
+
+                    # Give Artist by album artist name
+                    if newtrack.album_artist_printable in self.__artists_by_name:
+
+                        print("# replace album_artist_by artist: " + str(new_artist))
+                        self.__artists_by_name[newtrack.album_artist_printable] = new_artist #TODO: check eq
+                    else:
+                        print("# store new artist : " + str(new_artist))
                         print("# new artist store from nTrack.album_artist_printable: " + newtrack.album_artist_printable)
                         self.__artists_by_name[newtrack.album_artist_printable] = new_artist
 
-                    if new_artist.name_printable.strip() != "":
+                else:
+                    print("# track has no newtrack.album_artist. id: " + newtrack.id)
 
-                        print("# new artist store from nArtist.name_printable: " + new_artist.name_printable)
-                        self.__artists_by_name[new_artist.name_printable]  = new_artist
+
+
+
+
+
+                newtrack.add_album(new_album)
+                newtrack.add_artist(new_artist)
+
+                new_album.add_track(newtrack)
+                new_album.add_artist(new_artist)
+
+
+                new_artist.add_album(new_album)
+                new_artist.add_track(newtrack)
+
 
 
                 # self.__paths[hashlib.sha224(nPath1.encode('ascii', 'ignore')).hexdigest()] = nTrack
                 # self.__paths[hashlib.sha224(nPath2.encode('ascii', 'ignore')).hexdigest()] = nTrack
                 # adding some file paths; #TODO: use artists and other class tree!
+
+                print(str(new_album))
+                print(str(new_album))
+                print(str(new_album))
+
                 if newtrack.album_artist_printable.strip() != "":
                     path = (
-                        "/artists/" +
-                        newtrack.album_artist_printable + "/" +
-                        str(new_album) + "/" +
-                        str(newtrack)
+                            "/artists/" +
+                            newtrack.album_artist_printable + "/" +  # TODO: chech plz
+                            str(new_album) + "/" +
+                            str(newtrack)
                     )
                     self.__paths[str(path)] = newtrack
                     newtrack.add_path(path)
@@ -211,24 +254,15 @@ class MusicLibrary(object):
                             str(newtrack)
                     )
                     self.__paths[str(path)] = newtrack
-
                     newtrack.add_path(path)  # add main path
                     print(newtrack.path)
+
 
                 if newtrack.path is None:
                     print("WTF!!!!????!!!???? track does not have artist or album_artist!!! or any invalid?")
                     newtrack.add_path("/dev/null")  # add main path
 
 
-                newtrack.add_album(new_album)
-                newtrack.add_artist(new_artist)
-
-                new_album.add_track(newtrack)
-                new_album.add_artist(new_artist)
-
-
-                new_artist.add_album(new_album)
-                new_artist.add_track(newtrack)
 
                 '''
                 print("\n\n\nTRACK:")
@@ -277,7 +311,7 @@ class MusicLibrary(object):
 
         print("Loaded {} tracks, {} albums, {} artists and {} playlists ({} errors).".format(len(self.__tracks),
                                                                                              len(self.__albums),
-                                                                                             len( self.__artists_by_name),
+                                                                                             len(self.__artists_by_name),
                                                                                              len(self.__playlists),
                                                                                              errors))
 

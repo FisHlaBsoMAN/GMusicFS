@@ -200,6 +200,13 @@ class GMusicFS(LoggingMixIn, Operations):
             parts = artist_album_dir_matches.groupdict()
             print("parts artist_album_dir_matches:")
             print(parts)
+
+            # TODO:  File "/home/fish/ProjecMy new pats/GMusicFS-19042018/gmusicfs/code/gmusicfs.py", line 203, in getattr
+            # TODO:  artist th= self.library.artists_by_name[parts['artist']]
+            # TODO:  KeyError: 'First Astronomical Velocity2'
+
+
+
             artist = self.library.artists_by_name[parts['artist']]
             print("==================")
             print(artist)
@@ -430,8 +437,9 @@ class GMusicFS(LoggingMixIn, Operations):
 
         return track[1].read(offset, size)
 
-    ## то что происходит при чтении ссылки
+    ## see get_attr func in track
     def readlink (self, path):
+
         print("My new path:" + path)
         track = self.gettrack(path)
         print("Me founded track: " + str(track))

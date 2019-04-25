@@ -112,12 +112,24 @@ class Track(object):
     def path (self):
         return self.__path
 
+        path = (
+                "/artists/" +
+                self.album_artist_printable + "/" +  # TODO: chech plz
+                str(self.album) + "/" +
+                str(self)
+        )
+
+
+        print(path)
+        return str(path)
+
     def __init__ (self, library, data):
         self.__library = library
         self.__data = data
 
         self.__artists      = {}
         self.__albums       = {}
+        self.__ppp          = {}
         self.__stream_url   = None
         self.__stream_cache = bytes()
         self.__rendered_tag = bytes()
@@ -211,7 +223,9 @@ class Track(object):
     def add_artist (self, artist):  # TODO: check before insert? may be move outside check in class???? may be name conflicts
         self.__artists[artist.name_printable] = artist
 
+    #see musiclibrary
     def add_path (self, path):
+        self.__ppp[path] = 1
         if not self.__path:
             self.__path = path
         else:
@@ -284,15 +298,17 @@ class Track(object):
 
 
 
-
+        #TODO: symlinking links
         if self.path == req_path: # path from
             linkink = 0
             print("\n\n########## paths coincide!\n\n")
         else:
+            #see
+            #return 0
             print("\n\n########## NOT paths coincide -> readlink!\n\n")
             linkink = S_IFLNK
 
-        st = {'st_mode':    (linkink|S_IFREG|0o777), 'st_nlink': 1, 'st_ctime': 0, 'st_mtime': 0, 'st_atime': 0,
+        st = {'st_mode':    (linkink|S_IFREG|0o666), 'st_nlink': 1, 'st_ctime': 0, 'st_mtime': 0, 'st_atime': 0,
               'st_blksize': 512, 'st_blocks': 1}
 
         # todo: need validate data
@@ -360,8 +376,10 @@ class Track(object):
         if read_offset == 0 and not self.__stream_url:
         #if not self.__stream_url:
             print('####### FIRST RUN TRACK')
-            self.__stream_url = urllib.request.FancyURLopener({}).open(self.__library.get_stream_url(self.id))
-
+            try:
+                self.__stream_url = urllib.request.FancyURLopener({}).open(self.__library.get_stream_url(self.id))
+            except:
+                return None
             self.__stream_size = self.__stream_url.length
             self.__stream_cache += self.__stream_url.read(128 * 1024)  # 128kb?
 
@@ -500,7 +518,7 @@ class Track(object):
 
     # TODO: transfer the close logic of closing files from the library
     def close (self):
-
+        return
         if self.__library.gfs.get_num_opens(self.path) < 1:
             print("i cleanup track")
             if self.__stream_url:
