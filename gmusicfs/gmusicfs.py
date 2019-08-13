@@ -2,7 +2,7 @@
 
 import configparser
 import logging
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('gmusicfs')
 # import inspect
 import os
@@ -22,6 +22,8 @@ mime = magic.Magic(mime=True)
 #from gmusicapi import Mobileclient    as GoogleMusicWebAPI # need for getting device id's
 
 from gmusicfs import Tools, GMusicFS, MusicLibrary, NoCredentialException, Track, Album, Artist, Playlist
+
+from gmusicapi import Mobileclient    as GoogleMusicMobileclient # need for getting device id's # TODO: mobile client need for getting devices. need dynamic change somes
 #from gmusicfs import *
 
 
@@ -60,9 +62,6 @@ def main():
 
     args = parser.parse_args()
 
-    if args.deviceId:
-        GMusicFS.getDeviceId(True)
-        return
 
     mountpoint = os.path.abspath(args.mountpoint)
 
@@ -85,7 +84,18 @@ def main():
         logging.getLogger('fuse').setLevel(logging.WARNING)
         logging.getLogger('requests.packages.urllib3').setLevel(logging.WARNING)
         verbosity = 0
-    fs = GMusicFS(mountpoint, true_file_size=args.true_file_size, verbose=verbosity, lowercase=args.lowercase)
+
+
+
+
+
+    if args.deviceId: #TODO выделить отдельно иницаиализацию фс и медиатеки
+        library = GMusicFS(mountpoint, true_file_size=args.true_file_size, verbose=verbosity, lowercase=args.lowercase, check=True)
+        api = GoogleMusicMobileclient(debug_logging=logging.VERBOSE)
+        library.getDeviceId(api)
+        return
+    fs = GMusicFS(mountpoint, true_file_size=args.true_file_size, verbose=verbosity, lowercase=args.lowercase,  check=False)
+
     # quit()
     try:
         os.system("fusermount -uz " + mountpoint)

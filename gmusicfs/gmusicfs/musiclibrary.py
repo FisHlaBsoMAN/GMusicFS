@@ -12,8 +12,9 @@ from .track    import Track
 from .album    import Album
 from .artist   import Artist
 from .playlist import Playlist
+#from .gmusicfs import GMusicFS
 
-from gmusicapi import Mobileclient as GoogleMusicAPI
+from gmusicapi import Mobileclient as GoogleMusicMobileclient
 
 
 import pprint
@@ -26,10 +27,10 @@ class NoCredentialException(Exception):
 class MusicLibrary(object):
     """This class reads information about your Google Play Music library"""
 
-    def __init__ (self, username=None, password=None, verbose=0, gfs=None, true_file_size=False):
+    def __init__ (self, username=None, password=None, verbose=0, gfs=None, GFS=None, true_file_size=False):
 
         self.verbose = bool(verbose)
-        self.api     = GoogleMusicAPI(debug_logging=self.verbose)
+        self.api     = GoogleMusicMobileclient(debug_logging=self.verbose)
         self.gfs     = gfs
         self.__login_and_setup(username, password)
 
@@ -40,11 +41,19 @@ class MusicLibrary(object):
         self.__tracks_by_title = {}
         self.__playlists       = {}
         self.__paths           = {}
+        self.gfs               = GFS
 
         self.rescan()
 
+
+
     def __login_and_setup (self, username=None, password=None):
-        # If credentials are not specified, get them from $HOME/.gmusicfs
+        self.gfs.login(self.api)
+
+
+    def __login_and_setup2 (self, username=None, password=None):
+
+
         cred_path = os.path.join(os.path.expanduser('~'), '.gmusicfs/gmusicfs')  # TODO:  need to discuss
         if not username or not password:
             if not os.path.isfile(cred_path):
@@ -84,6 +93,11 @@ class MusicLibrary(object):
         log.info('Logging in...')
         self.api.login(username, password, device_id)
         log.info('Login successful.')
+
+
+
+
+
 
     @property
     def artists (self):
