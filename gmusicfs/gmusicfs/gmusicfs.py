@@ -9,8 +9,8 @@ import os
 import re
 
 
-from gmusicapi import Webclient    as GoogleMusicWebAPI # need for getting device id's
-
+from gmusicapi import Webclient    as GoogleMusicWebAPI
+from gmusicapi import Mobileclient    as GoogleMusicMobileclient # need for getting device id's # TODO: mobile client need for getting devices. need dynamic change somes
 
 from errno import ENOENT
 from stat import S_IFDIR
@@ -50,9 +50,10 @@ class GMusicFS(LoggingMixIn, Operations):
                     'No username/password could be read from config file'
                     ': %s' % cred_path)
 
-        api = GoogleMusicWebAPI(debug_logging=verbose)
+        api = GoogleMusicMobileclient(debug_logging=verbose)
         log.info('Logging in...')
-        api.login(username, password)
+
+        api.login(username, password, GoogleMusicMobileclient.FROM_MAC_ADDRESS) #TODO: dynamic change webclient and mobileclient
         log.info('Login successful.')
 
         for device in api.get_registered_devices():

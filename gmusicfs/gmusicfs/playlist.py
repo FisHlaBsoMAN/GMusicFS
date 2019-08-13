@@ -3,7 +3,7 @@ from .track import Track
 from .album import Album
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 log = logging.getLogger('gmusicfs')
 
 class Playlist(object):
@@ -22,11 +22,18 @@ class Playlist(object):
             # TODO: WTF IS THIS SHIT?
             track_id = track['trackId']
             # noinspection PyBroadException
+
             try:
                 if 'track' in track:
+                    library.addtrack(track['track'])
+                    continue
+
+                    # library.addtrack(track['track'])
+
                     album_id = track['track']['albumId']
                     if album_id not in self.__library.albums:
                         self.__library.albums[album_id] = Album(self.__library, track['track'])
+
                 if track_id in self.__library.tracks:
                     tr = self.__library.tracks[track_id]
                 else:

@@ -2,7 +2,7 @@
 
 import configparser
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 log = logging.getLogger('gmusicfs')
 # import inspect
 import os
@@ -18,21 +18,19 @@ mime = magic.Magic(mime=True)
 
 
 # import gmusicapi.exceptions
-from gmusicapi import Webclient    as GoogleMusicWebAPI # need for getting device id's
+#from gmusicapi import Webclient    as GoogleMusicWebAPI # need for getting device id's
+#from gmusicapi import Mobileclient    as GoogleMusicWebAPI # need for getting device id's
 
-#from code import Tools, GMusicFS, MusicLibrary, NoCredentialException, Track, Album, Artist, Playlist
-from gmusicfs import *
-
-
-
+from gmusicfs import Tools, GMusicFS, MusicLibrary, NoCredentialException, Track, Album, Artist, Playlist
+#from gmusicfs import *
 
 
 
 def main():
-    log.setLevel(logging.WARNING)
-    logging.getLogger('gmusicapi').setLevel(logging.WARNING)
-    logging.getLogger('fuse').setLevel(logging.WARNING)
-    logging.getLogger('requests.packages.urllib3').setLevel(logging.WARNING)
+    log.setLevel(logging.ERROR)
+    logging.getLogger('gmusicapi').setLevel(logging.ERROR)
+    logging.getLogger('fuse').setLevel(logging.ERROR)
+    logging.getLogger('requests.packages.urllib3').setLevel(logging.ERROR)
 
     parser = argparse.ArgumentParser(description='GMusicFS')
     parser.add_argument('mountpoint', help='The location to mount to')
@@ -63,7 +61,7 @@ def main():
     args = parser.parse_args()
 
     if args.deviceId:
-        GMusicFS.getDeviceId()
+        GMusicFS.getDeviceId(True)
         return
 
     mountpoint = os.path.abspath(args.mountpoint)

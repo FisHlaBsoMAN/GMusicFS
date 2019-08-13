@@ -55,12 +55,8 @@ class Track(object):
                 print("#USING tagSize")
             elif 'durationMillis' in self.__data:
                 self.__stream_size = \
-                    int(
-                            (
-                                    int(self.__data['durationMillis']) / 1000 + 1
-                            ) * 320 / 8 * 1000
-                    )
-                print("#USING durationMillis")
+                    int(  ( int(self.__data['durationMillis'] / 1000 + 1  ) * 320 / 8 * 1000 ))
+                #print("#USING durationMillis")
             else:
                 print("#USING fake size")
                 self.__stream_size = 0
@@ -381,7 +377,7 @@ class Track(object):
             except:
                 return None
             self.__stream_size = self.__stream_url.length
-            self.__stream_cache += self.__stream_url.read(128 * 1024)  # 128kb?
+            self.__stream_cache += self.__stream_url.read(128 * 1024*20)  # 128kb?
 
         if not self.__stream_url:  # error while getting url
             # TODO:check it
@@ -406,12 +402,12 @@ class Track(object):
 
         # Crutch
 
-        print("\n############ debugPos")
-        print("tag_length: \t%10.3fK" % (tag_length / 1024))
-        print("#pos:       \t%10.3fK" % (pos / 1024))
-        print("offset:     \t%10.3fK" % (read_offset / 1024))
-        print("size:       \t%10.3fK" % (read_chunk_size / 1024))
-        print("estSize:    \t%10.3fK" % (int(self.stream_size) / 1024))
+        #print("\n############ debugPos")
+        #print("tag_length: \t%10.3fK" % (tag_length / 1024))
+        #print("#pos:       \t%10.3fK" % (pos / 1024))
+        #print("offset:     \t%10.3fK" % (read_offset / 1024))
+        #print("size:       \t%10.3fK" % (read_chunk_size / 1024))
+        #print("estSize:    \t%10.3fK" % (int(self.stream_size) / 1024))
 
         downloaded_stream_len = len(self.__stream_cache) - tag_length
         diff = downloaded_stream_len - tag_length - (read_offset + read_chunk_size)
@@ -451,30 +447,30 @@ class Track(object):
                 self.__stream_cache += chunk  # simply offset?#read all now?
                 downloaded_stream_len = len(self.__stream_cache) - tag_length
 
-                print("##downloaded_stream_len: %d" % downloaded_stream_len)
-                print("##tag_length:            %d" % tag_length)
-                print("##read_offset:           %d" % read_offset)
-                print("##read_chunk_size:       %d" % read_chunk_size)
-                print("##size_of_buffer:        %d" % size_of_buffer)
-                print("##ro+rcs:                %d" % (read_offset + read_chunk_size))
+                #print("##downloaded_stream_len: %d" % downloaded_stream_len)
+                #print("##tag_length:            %d" % tag_length)
+                #print("##read_offset:           %d" % read_offset)
+                #print("##read_chunk_size:       %d" % read_chunk_size)
+                #print("##size_of_buffer:        %d" % size_of_buffer)
+                #print("##ro+rcs:                %d" % (read_offset + read_chunk_size))
 
-                print("chunk:                   %10.3fK" % (len(chunk) / 1000))
+                #print("chunk:                   %10.3fK" % (len(chunk) / 1000))
 
                 if downloaded_stream_len >= (read_offset + read_chunk_size):
-                    print("################# ALL ?")
+                    #print("################# ALL ?")
                     break
                 if len(chunk) == 0:
-                    print("done?")
-                    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!len of chunk == 0")
-                    print("downloaded length: %d" % downloaded_stream_len)
-                    print("str_size in google %d" % self.__stream_size)
+                    #print("done?")
+                    #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!len of chunk == 0")
+                    #print("downloaded length: %d" % downloaded_stream_len)
+                    #print("str_size in google %d" % self.__stream_size)
                     remain = (self.__stream_size - downloaded_stream_len)
-                    print("remain:            %d" % remain)
+                    #print("remain:            %d" % remain)
                     if remain == 0:
-                        print("STREAM DOWNLOADED")
+                        #print("STREAM DOWNLOADED")
                         break
                     else:  # TODO: need checking
-                        print("STREAM IS NOT!!!! FULLY DOWNLOADED")
+                        #print("STREAM IS NOT!!!! FULLY DOWNLOADED")
                         try_no += 1
                         print("try: %d" % try_no)
                         if try_no > 5:
@@ -489,14 +485,14 @@ class Track(object):
 
         len_remain = (downloaded_stream_len + tag_length - read_offset - read_chunk_size)
         # Crutch
-        print("#remain:     \t%10.3fK" % (len_remain / 1000))
-        print("diff:        \t%10.3fK" % (diff / 1000))
-        print("#downloaded: \t%10.3fK" % (downloaded_stream_len / 1000))
-        print("#file_size:  \t%10.3fK" % (self.stream_size / 1000))
-        print("#read_offset:\t%10.3fK" % (read_offset / 1000))
-        print("#read_off+ch:\t%10.3fK" % (read_offset / 1000 + read_chunk_size / 1000))
-        print("#tag_size:   \t%10.3fK" % (self.__tag_length / 1000))
-        print("real_str_siz:\t%10.3fK" % (self.__stream_size / 1000))
+        #print("#remain:     \t%10.3fK" % (len_remain / 1000))
+        #print("diff:        \t%10.3fK" % (diff / 1000))
+        #print("#downloaded: \t%10.3fK" % (downloaded_stream_len / 1000))
+        #print("#file_size:  \t%10.3fK" % (self.stream_size / 1000))
+        #print("#read_offset:\t%10.3fK" % (read_offset / 1000))
+        #print("#read_off+ch:\t%10.3fK" % (read_offset / 1000 + read_chunk_size / 1000))
+        #print("#tag_size:   \t%10.3fK" % (self.__tag_length / 1000))
+        #print("real_str_siz:\t%10.3fK" % (self.__stream_size / 1000))
 
         if len(self.__stream_cache) > self.stream_size:  # TODO: neeed??
             print( '### WHAT? DOWNLOADED SIZE > CALCULATED? {0:10d} > {1:10d}'.format(
