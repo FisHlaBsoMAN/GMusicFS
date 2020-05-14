@@ -147,16 +147,21 @@ class Album(object):
         log.info("loading art album: {0.title}".format(self))
         self.__art = bytes()
 
-        art_path = os.path.join(os.path.expanduser('~'), '.gmusicfs', 'album_arts',   #TODO: make one var of path's
-                                Tools.strip_text(self.id))  # without extension
+        # TODO: make one var of path's (not sure that it's still actual)
+        base_art_path = os.path.join(os.path.expanduser('~'), '.gmusicfs', 'album_arts')
+        art_path = os.path.join(base_art_path, Tools.strip_text(self.id))  # without extension
 
-        for ext in ['.jpg', '.png']:
-            # noinspection PyBroadException
-            try:
-                local_art = open(art_path + ext, "rb")
-                break
-            except Exception:
-                local_art = ""
+        local_art = ''
+        if os.path.isdir(base_art_path):
+            for ext in ['.jpg', '.png']:
+                # noinspection PyBroadException
+                try:
+                    local_art = open(art_path + ext, "rb")
+                    break
+                except Exception:
+                    pass
+        else:
+            os.mkdir(base_art_path)
 
         if local_art:
             print("# ART FROM FS")
@@ -167,7 +172,12 @@ class Album(object):
             local_art.close()
         else:
             print("# ART FROM URL")
-            u = urllib.request.urlopen(self.__art_url)
+
+            try:
+                u = urllib.request.urlopen(self.__art_url)
+            except urllib.error.HTTPError:
+                log.error("Cannot load art for album '%s'", self.title)
+                return
 
             # TODO: do-while
             data = u.read()
@@ -178,9 +188,9 @@ class Album(object):
 
             self.__art_mime = mime.from_buffer(self.__art)
 
-            if self.__art_mime == b'image/jpeg':
+            if self.__art_mime == 'image/jpeg':
                 file_extension = '.jpg'
-            elif self.__art_mime == b'image/png':
+            elif self.__art_mime == 'image/png':
                 file_extension = '.png'
             else:  # todo: more variant?
                 self.__art_mime = None
