@@ -47,9 +47,14 @@ class Artist(object):
     def tracks (self):
         return self.__tracks
 
-    def add_album (self, album):
+    def add_album (self, album, track=None):
         if album.title_printable not in self.__albums:
             self.__albums[album.title_printable] = album
+        else:
+            two = self.__albums[album.title_printable]
+            print(str(album), " already exists")
+            if album.id != two.id:
+                print("album id is differs\n")
 
     def add_track (self, track):
         if str(track) not in self.__tracks:

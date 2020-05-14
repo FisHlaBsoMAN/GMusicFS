@@ -23,7 +23,7 @@ class Track(object):
     ID3V1_TRAILER_SIZE = 128
 
     # TODO: check:
-    TRACK_REGEX = '(?P<disk>[0-9]+)-(?P<track>(?P<number>[0-9]+)) - (?P<trartist>.+?) - (?P<tralbum>.+?) - ((?P<title>.*)\.mp3)'
+    TRACK_REGEX = '(?P<filename>(?P<disk>[0-9]+)-(?P<track>(?P<number>[0-9]+)) - (?P<trartist>.+?) - (?P<tralbum>.+?) - ((?P<title>.*)\.mp3))'
     TRACK_FORMAT = "{disk:02d}-{number:02d} - {artist_printable} - {album_printable} - {title_printable}.mp3"
     TRACK_TRACKS_FORMAT = "{disk:02d}-{number:02d} - {trartist} - {title}.mp3"
 

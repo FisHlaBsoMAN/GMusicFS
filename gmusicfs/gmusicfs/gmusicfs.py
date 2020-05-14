@@ -78,13 +78,13 @@ class GMusicFS(LoggingMixIn, Operations):
             log.info("not authenticaticated")
 
         log.info("check device_id")
-        if device_id is "" or device_id == "mac":
+        if not device_id or device_id == "mac":
             device_id = GoogleMusicMobileclient.FROM_MAC_ADDRESS
             log.info(f"device_id generated from MAC ({device_id})")
         else:
             log.info(f"using loaded device_id ({device_id})")
 
-        oauth_info = GoogleMusicMobileclient._session_class.oauth
+        oauth_info = GoogleMusicMobileclient._session_class.oauth #TODO: need normal login mechanism
 
         log.info("checking refresh token")
         flow = OAuth2WebServerFlow(**oauth_info._asdict())
@@ -109,7 +109,7 @@ class GMusicFS(LoggingMixIn, Operations):
         if authenticated:
             pp.pprint('Logged in to Google Music')
         else:
-            pp.pprint('Failed to login to Google Music as "%s"', username)
+            pp.pprint(f'Failed to login to Google Music as "{device_id}"')
             pp.pprint('Failed to login to Google Music')
 
         return api
@@ -144,9 +144,9 @@ class GMusicFS(LoggingMixIn, Operations):
         )
 
         self.playlist_dir   = re.compile('^/playlists/(?P<playlist>[^/]+)$')
-        print(Playlist.PLAYLIST_REGEX)
+        #print(Playlist.PLAYLIST_REGEX)
         self.playlist_track = re.compile(Playlist.PLAYLIST_REGEX)
-        print(Track.TRACKS_REGEX)
+        #print(Track.TRACKS_REGEX)
         self.tracks_track   = re.compile(Track.TRACKS_REGEX)
 
         self.__opened_tracks = {}  # path -> urllib2_obj # TODO: короч отсюда танцувать или чо? я пока завис
@@ -210,7 +210,6 @@ class GMusicFS(LoggingMixIn, Operations):
             pass
 
         elif artist_dir_matches:
-            # print("path \"artist_dir_matches\"")
             pass
 
 
@@ -351,7 +350,7 @@ class GMusicFS(LoggingMixIn, Operations):
                 print("############### playlist_track_matches I RETURN ATTR!")
 
                 # pp.pprint(playlist.tracks)
-                pl_track = playlist.tracks[parts['title']]
+                pl_track = playlist.tracks[parts['filename']]
 
                 print(parts['title'])
                 print("error in playlist")
@@ -421,7 +420,9 @@ class GMusicFS(LoggingMixIn, Operations):
         elif playlist_track_m:
             parts = playlist_track_m.groupdict()
             playlist = self.library.playlists[parts['playlist']]
-            track = playlist.tracks[parts['title']]
+
+            track = playlist.tracks[parts['filename']]
+
             print("founded track in playlist " + str(playlist))
         else:
             print("##Error: track not found in any path's!")
@@ -505,7 +506,21 @@ class GMusicFS(LoggingMixIn, Operations):
 
 
         if track is not None:  # TODO: count the number of slashes
-            return "../../.." + track.path
+
+
+            if self.artist_album_track.match(path):
+                return "../../.." + track.path
+            if self.playlist_track.match(path):
+                return "../.." + track.path
+            if self.tracks_track.match(path):
+                return ".." + track.path
+
+
+
+            return "." + track.path
+
+
+
         else:
             print("##ERROR: link path" + track.path + " not avaliable")
             raise FuseOSError(ENOENT)

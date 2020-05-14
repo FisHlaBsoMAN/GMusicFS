@@ -140,7 +140,7 @@ class MusicLibrary(object):
         print(url)
         return url
 
-    def addtrack(self,track):
+    def addtrack(self,track, source=None):
         # make track
         newtrack = Track(self, track)
 
@@ -156,6 +156,8 @@ class MusicLibrary(object):
             self.__tracks_by_title[str(newtrack)] = newtrack
         else:
             print("# ALERT! TRACK_BY_NAME ALREADY EXISTS IN TRACK BASE? DUPES?")
+            one = self.__tracks_by_title[str(newtrack)]
+            two = newtrack
             newtrack = self.__tracks_by_title[str(newtrack)]
 
         # make album
@@ -177,6 +179,9 @@ class MusicLibrary(object):
                 new_album = self.__albums[custId]
             custId = None
 
+        newtrack.add_album(new_album)
+        new_album.add_track(newtrack)
+
         # make artist
         new_artist = Artist(self, track)
         print("artist:" + new_artist.name_printable)
@@ -192,33 +197,40 @@ class MusicLibrary(object):
                 print("# store new artist : " + str(new_artist))
                 print("# new artist store from nArtist.name_printable: " + new_artist.name_printable)
                 self.__artists_by_name[new_artist.name_printable] = new_artist
-
+            #endif artist name in artists
+            new_artist.add_album(new_album)
+            new_artist.add_track(newtrack)
+            newtrack.add_artist(new_artist)
+            new_album.add_artist(new_artist)
         else:
             print("# artist has no artist name. id: " + new_artist.id)  # TODO: impossible?
 
+
+
         if newtrack.album_artist_printable.strip() != "":
 
-            # Give Artist by album artist name
+            # split album artist and
             if newtrack.album_artist_printable in self.__artists_by_name:
-
+                stored_artist = self.__artists_by_name[newtrack.album_artist_printable]
                 print("# replace album_artist_by artist: " + str(new_artist))
-                self.__artists_by_name[newtrack.album_artist_printable] = new_artist  # TODO: check eq
+
             else:
-                print("# store new artist : " + str(new_artist))
+                print("# store new album artist : " + str(new_artist))
                 print("# new artist store from nTrack.album_artist_printable: " + newtrack.album_artist_printable)
-                self.__artists_by_name[newtrack.album_artist_printable] = new_artist
+                stored_artist = Artist(self, track, newtrack.album_artist_printable)
+                self.__artists_by_name[newtrack.album_artist_printable] = stored_artist
+
+            stored_artist.add_album(new_album)
+            stored_artist.add_track(newtrack)
+            newtrack.add_artist(stored_artist)
+            new_album.add_artist(stored_artist)
 
         else:
             print("# track has no newtrack.album_artist. id: " + newtrack.id)
 
-        newtrack.add_album(new_album)
-        newtrack.add_artist(new_artist)
 
-        new_album.add_track(newtrack)
-        new_album.add_artist(new_artist)
 
-        new_artist.add_album(new_album)
-        new_artist.add_track(newtrack)
+
 
         # self.__paths[hashlib.sha224(nPath1.encode('ascii', 'ignore')).hexdigest()] = nTrack
         # self.__paths[hashlib.sha224(nPath2.encode('ascii', 'ignore')).hexdigest()] = nTrack
@@ -261,6 +273,8 @@ class MusicLibrary(object):
         pp.pprint(nArtist.__dict__)
         '''
 
+        return newtrack
+
     def __populate_library (self):
         log.info('Gathering track information...')
         tracks = self.api.get_all_songs()
@@ -280,17 +294,15 @@ class MusicLibrary(object):
 
 
 
-        # refresh album arts
-        # [albumObj.art for albumObj in self.albums.values()] #TODO: uncoment?
 
         # TODO: do not use path lists
         print("###all paths:")
         pp.pprint(self.__paths)
 
         # TODO: uncomment me
-        # playlists = self.api.get_all_user_playlist_contents()
+        playlists = self.api.get_all_user_playlist_contents()
 
-        playlists = ""
+        #playlists = ""
         for pl in playlists:
 
             name = Tools.strip_text(pl['name'])
@@ -308,6 +320,9 @@ class MusicLibrary(object):
                     log.exception("Error loading playlist: {}".format(pl))
                     errors += 1
 
+
+        # refresh album arts
+        #[albumObj.art for albumObj in self.albums.values()] #TODO: uncoment?
         print("Loaded {} tracks, {} albums, {} artists and {} playlists ({} errors).".format(len(self.__tracks),
                                                                                              len(self.__albums),
                                                                                              len(self.__artists_by_name),

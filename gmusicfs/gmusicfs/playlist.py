@@ -25,7 +25,8 @@ class Playlist(object):
 
             try:
                 if 'track' in track:
-                    library.addtrack(track['track'])
+                    track_obj = library.addtrack(track['track'], "from_playlist")
+                    self.__tracks[str(track_obj)] = track_obj
                     continue
 
                     # library.addtrack(track['track'])

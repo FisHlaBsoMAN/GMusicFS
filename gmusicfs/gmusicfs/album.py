@@ -86,8 +86,12 @@ class Album(object):
             self.__artistId = self.__album_artist
 
     @property
-    def id(self):
+    def id_db (self):
         return self.__id
+
+    @property
+    def id (self):
+        return self.__album_artist_printable + self.title_printable #TODO: need debug track-album-title
 
     @property
     def tracks (self):
