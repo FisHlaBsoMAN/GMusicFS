@@ -149,13 +149,13 @@ class GMusicFS(LoggingMixIn, Operations):
         #print(Track.TRACKS_REGEX)
         self.tracks_track   = re.compile(Track.TRACKS_REGEX)
 
-        self.__opened_tracks = {}  # path -> urllib2_obj # TODO: короч отсюда танцувать или чо? я пока завис
+        self.__opened_tracks = {}  # path -> urllib2_obj # TODO: make somth with it
 
 
         # Login to Google Play Music and parse the tracks:
-        if(check):   # TODO: костыль нужно написать нормально. я запутался в классах и забыл что откуда
+        if(check):
             return
-        self.library = MusicLibrary(username, password, gfs=self, true_file_size=true_file_size, verbose=verbose, GFS=self) #TODO: наверное вообще вынести из инициализации? а в мейне сделать отдельно авторизацию и инициализацию библиотеки
+        self.library = MusicLibrary(username, password, gfs=self, true_file_size=true_file_size, verbose=verbose, GFS=self) #TODO: probably even make it out of initialization? and in the main do separately authorization and initialization of the library
         log.info("Filesystem ready : %s" % path)
 
     def cleanup (self):
@@ -433,7 +433,6 @@ class GMusicFS(LoggingMixIn, Operations):
 
 
 
-    ## то что происходит при открытии файла
     def open (self, path, fip):
         log.info("open: {} ({})".format(path, fip))
         track = self.gettrack(path)
@@ -458,7 +457,6 @@ class GMusicFS(LoggingMixIn, Operations):
             return self.__opened_tracks[path][0]
 
 
-    ## то что происходит при закрытии файла
     def release (self, path, fip):
         log.info("release: {} ({})".format(path, fip))
         track = self.gettrack(path)
@@ -475,14 +473,13 @@ class GMusicFS(LoggingMixIn, Operations):
             self.__opened_tracks[key][1].close()
             #del self.__opened_tracks[key]
         else:
-            print("трек открыт еще один раз")
+            print("the track is open one more time")
 
 
         print("##openned tracks: ")
         pp.pprint(self.__opened_tracks)
 
 
-    ## то что происходит при чтении файла
     def read (self, path, size, offset, fip):
 
         log.info("read: {} offset: {} size: {} ({})".format(path, offset, size, fip))

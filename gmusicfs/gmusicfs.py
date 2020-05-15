@@ -89,7 +89,7 @@ def main():
 
 
 
-    if args.deviceId: #TODO выделить отдельно иницаиализацию фс и медиатеки
+    if args.deviceId: #TODO separate the initialization of fs and the media library
         library = GMusicFS(mountpoint, true_file_size=args.true_file_size, verbose=verbosity, lowercase=args.lowercase, check=True)
         api = GoogleMusicMobileclient(debug_logging=logging.VERBOSE)
         library.getDeviceId(api)
