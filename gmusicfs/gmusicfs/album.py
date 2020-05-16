@@ -2,6 +2,8 @@
 
 from .tools  import Tools
 from .artist import Artist
+from PIL import Image
+import io
 import os
 import urllib
 import logging
@@ -26,7 +28,6 @@ class Album(object):
         self.__tracks     = {}
         self.__artists    = {}
         self.__art        = bytes()
-        self.__art_mime   = b'image/jpeg'
         self.__album_info = None
 
         # album_title
@@ -127,7 +128,7 @@ class Album(object):
 
     @property
     def art_mime (self):
-        return self.__art_mime
+        return 'image/jpeg'
 
 
 
@@ -144,7 +145,6 @@ class Album(object):
         for track in self.__tracks.values():
             self.__year = track.year or self.__year # TODO: fking year 0000
 
-    # TODO: need check image type! some tracks has png cover
     def __load_art (self):
         if not self.__art_url:
             return
@@ -153,29 +153,34 @@ class Album(object):
 
         # TODO: make one var of path's (not sure that it's still actual)
         base_art_path = os.path.join(os.path.expanduser('~'), '.gmusicfs', 'album_arts')
-        art_path = os.path.join(base_art_path, Tools.strip_text(self.id))  # without extension
+        art_name = Tools.strip_text(self.id)
+        art_path = os.path.join(base_art_path, art_name)  # without extension
 
-        local_art = ''
+        art_ext = ''
         if os.path.isdir(base_art_path):
-            for ext in ['.jpg', '.png']:
-                # noinspection PyBroadException
-                try:
-                    local_art = open(art_path + ext, "rb")
-                    break
-                except Exception:
-                    pass
+            directory = os.scandir(base_art_path)
+            for entry in directory:
+                if entry.name.startswith(art_name):
+                    art_ext = entry.name.replace(art_name + '.', '')
+                    break  # assuming that there are no more saved arts
         else:
             os.mkdir(base_art_path)
 
-        if local_art:
-            print("# ART FROM FS")
-            data = local_art.read()
-            while data:
-                self.__art += data
-                data = local_art.read()
-            local_art.close()
+        if art_ext:
+            log.info('Taking art from filesystem')
+
+            filepath = '%s.%s' % (art_path, art_ext)
+            image = Image.open(filepath)
+
+            if art_ext != 'jpg':
+                log.info('Converting art from %s to jpg' % art_ext)
+                image = image.convert('RGB')
+                image.save(art_path + '.jpg')
+                os.remove(filepath)
+
+            self.__art = image.tobytes()
         else:
-            print("# ART FROM URL")
+            log.info('Downloading art from Internet')
 
             try:
                 u = urllib.request.urlopen(self.__art_url)
@@ -183,28 +188,22 @@ class Album(object):
                 log.error("Cannot load art for album '%s'", self.title)
                 return
 
-            # TODO: do-while
             data = u.read()
             while data:
                 self.__art += data
                 data = u.read()
             u.close()
 
-            self.__art_mime = mime.from_buffer(self.__art)
-
-            if self.__art_mime == 'image/jpeg':
-                file_extension = '.jpg'
-            elif self.__art_mime == 'image/png':
-                file_extension = '.png'
-            else:  # todo: more variant?
-                self.__art_mime = None
-                self.__art = None
-                return
-
-            print("# ART WRITING TO DISK")
-            local_art = open(art_path + file_extension, "wb")
-            local_art.write(self.__art)
-            local_art.close()
+            log.info('Saving art to disk')
+            art_mime = mime.from_buffer(self.__art)
+            if art_mime.endswith('jpeg'):
+                local_art = open(art_path + '.jpg', "wb")
+                local_art.write(self.__art)
+                local_art.close()
+            else:  # need to convert this art to jpeg
+                data_io = io.BytesIO(self.__art)
+                image = Image.open(data_io).convert('RGB')
+                image.save(art_path + '.jpg')
 
         print("loading art album: {0.title_printable} {0.art_mime}".format(self) + " done!")
 

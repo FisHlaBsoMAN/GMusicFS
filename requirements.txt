@@ -3,3 +3,4 @@ python-magic
 fusepy
 gmusicapi
 eyed3
+Pillow==7.1.2
