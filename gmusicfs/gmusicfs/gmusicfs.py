@@ -43,39 +43,44 @@ class GMusicFS(LoggingMixIn, Operations):
         #del api  # not forget
         return True
 
-    def login (self, api, verbose=False):
-        print("GO")
-        cred_path = os.path.join(os.path.expanduser('~'), '.gmusicfs/gmusicfs')  # TODO: move to library?
-        if not os.path.isfile(cred_path):
-            raise NoCredentialException(
-                    'No username/password was specified. No config file could '
-                    'be found either. Try creating %s and specifying your '
-                    'username/password there. Make sure to chmod 600.'
-                    % cred_path)
-        if not oct(os.stat(cred_path)[os.path.stat.ST_MODE]).endswith('00'):
-            raise NoCredentialException(
-                    'Config file is not protected. Please run: '
-                    'chmod 600 %s' % cred_path)
+    def login(self, api, verbose=False):
+        log.debug('login method entered')
+
+        base_path = os.path.join(os.path.expanduser('~'), '.gmusicfs')
+        if not os.path.isdir(base_path):
+            os.mkdir(base_path)
+
+        storage_path = os.path.join(base_path, 'storage')
+        settings_path = os.path.join(base_path, 'gmusicfs')  # TODO: move to library?
         config = configparser.ConfigParser()
 
-        config.read(cred_path)
+        if not os.path.isfile(settings_path):
+            config['credentials'] = {'deviceid': 'mac'}
+            with open(settings_path, 'w') as settings:
+                config.write(settings)
+            raise NoCredentialException(
+                    'Configuration file was not found. Just created new one at %s and filled it with default options. '
+                    'Edit them as you want, then rerun this program.'
+                    % settings_path)
 
-        refresh_token = config.get('oauth', 'refresh_token')
-        initial_code  = config.get('oauth', 'initial_code')
-        device_id     = config.get('credentials', 'deviceid')
+        config.read(settings_path)
+        device_id = config.get('credentials', 'deviceid')
 
-        #if not username or not password:
-        #    raise NoCredentialException( 'No username/password could be read from config file'  ': %s' % cred_path)
-
-        #api = GoogleMusicMobileclient(debug_logging=verbose)
-        api._authtype = 'oauth'
-
-        log.info("check authentification")
+        log.info("check authentication")
         if api.is_authenticated():
-            log.info("Deauthentificate from api")
+            log.info("Deauthenticate from api")
             api.logout()
         else:
-            log.info("not authenticaticated")
+            log.info("not authenticated")
+
+        oauth_creds = storage_path
+        if not os.path.isfile(storage_path):
+            oauth_creds = api.perform_oauth(storage_path)
+
+        if not oct(os.stat(storage_path)[os.path.stat.ST_MODE]).endswith('00'):
+            raise NoCredentialException(
+                    'Storage file is not protected. Please run: '
+                    'chmod 600 %s' % storage_path)
 
         log.info("check device_id")
         if not device_id or device_id == "mac":
@@ -84,36 +89,14 @@ class GMusicFS(LoggingMixIn, Operations):
         else:
             log.info(f"using loaded device_id ({device_id})")
 
-        oauth_info = GoogleMusicMobileclient._session_class.oauth #TODO: need normal login mechanism
-
-        log.info("checking refresh token")
-        flow = OAuth2WebServerFlow(**oauth_info._asdict())
-
-        if not initial_code:
-            print(f"Need new initial code")
-            print(f'Please provide the initial code from the following URL: \n{flow.step1_get_authorize_url()}', )
-            print("And paste code in config\ninitial_code = bla\n")
-            exit()
-
-
-        if initial_code and not refresh_token:
-            credentials = flow.step2_exchange(initial_code)
-            refresh_token = credentials.refresh_token
-            print(f"Please update your config to include the following refresh_token:\nrefresh_token = {refresh_token}")
-            exit()
-
-        authenticated = api.oauth_login(
-            device_id,
-            oauth_credentials=credentials_from_refresh_token(refresh_token, oauth_info))
+        authenticated = api.oauth_login(device_id, oauth_creds)
 
         if authenticated:
             pp.pprint('Logged in to Google Music')
         else:
             pp.pprint(f'Failed to login to Google Music as "{device_id}"')
-            pp.pprint('Failed to login to Google Music')
 
         return api
-
 
 
     def __init__ (self, path, username=None, password=None, true_file_size=False, verbose=0, lowercase=True, check=False): # TODO: lovercase
